@@ -227,7 +227,7 @@ class BinarySearchTree(object):
             self._transplant(node_key, node_key.left)
         else:
             suce_node_key = self._minimum(node_key.right)
-            if suce_node_key.parent != node_key:
+            if suce_node_key.parent is not node_key:
                 self._transplant(suce_node_key, suce_node_key.right)
                 suce_node_key.right = node_key.right
                 suce_node_key.right.parent = suce_node_key

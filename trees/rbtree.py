@@ -24,10 +24,10 @@ class NodeRBTree(NodeBSTree):
 
     @property
     def color(self):
-        return 'black' if self._color else 'red'
+        return 'black' if self._color is _BLACK else 'red'
 
     def is_red(self):
-        return self._color == _RED
+        return self._color is _RED
 
     def _set_black(self):
         self._color = _BLACK
@@ -110,36 +110,36 @@ class RedBlackTree(BinarySearchTree):
         new_root.right = old_root
         old_root.parent = new_root
 
-    def _insert_fixup(self, z):
-        while z.parent.is_red():
-            if z.parent is z.parent.parent.left:
-                y = z.parent.parent.right
+    def _insert_fixup(self, node):
+        while node.parent.is_red():
+            if node.parent is node.parent.parent.left:
+                y = node.parent.parent.right
                 if y.is_red():
-                    z.parent._set_black()
+                    node.parent._set_black()
                     y._set_black()
-                    z.parent.parent._set_red()
-                    z = z.parent.parent
+                    node.parent.parent._set_red()
+                    node = node.parent.parent
                 else:
-                    if z is z.parent.right:
-                        z = z.parent
-                        self._left_rotate(z)
-                    z.parent._set_black()
-                    z.parent.parent._set_red()
-                    self._right_rotate(z.parent.parent)
+                    if node is node.parent.right:
+                        node = node.parent
+                        self._left_rotate(node)
+                    node.parent._set_black()
+                    node.parent.parent._set_red()
+                    self._right_rotate(node.parent.parent)
             else:
-                y = z.parent.parent.left
+                y = node.parent.parent.left
                 if y.is_red():
-                    z.parent._set_black()
+                    node.parent._set_black()
                     y._set_black()
-                    z.parent.parent._set_red()
-                    z = z.parent.parent
+                    node.parent.parent._set_red()
+                    node = node.parent.parent
                 else:
-                    if z is z.parent.left:
-                        z = z.parent
-                        self._left_rotate(z)
-                    z.parent._set_black()
-                    z.parent.parent._set_red()
-                    self._right_rotate(z.parent.parent)
+                    if node is node.parent.left:
+                        node = node.parent
+                        self._left_rotate(node)
+                    node.parent._set_black()
+                    node.parent.parent._set_red()
+                    self._right_rotate(node.parent.parent)
         self._root._set_black()
 
     def _insert(self, new_node):
@@ -148,10 +148,94 @@ class RedBlackTree(BinarySearchTree):
         self._insert_fixup(new_node)
 
     def _transplant(self, old_node, new_node):
-        pass
+        if old_node.parent is None:
+            self._root = new_node
+        elif old_node is old_node.parent.left:
+            old_node.parent.left = new_node
+        else:
+            old_node.parent.right = new_node
+        new_node.parent = old_node.parent
+
+    def _delete_fixup(self, node):
+        while node is not self.root and node.is_black():
+            if node is node.parent.left:
+                w = node.parent.right
+                if w.is_red():
+                    w._set_black()
+                    node.parent._set_red()
+                    self._left_rotate(node.parent)
+                    w = node.parent.right
+                if not w.left.is_red() and not w.right.is_red():
+                    w._set_red()
+                    node = node.parent
+                else:
+                    if not w.right.is_red():
+                        w.left._set_black()
+                        w._set_red()
+                        self._right_rotate(w)
+                        w = node.parent.right
+                    if node.parent.is_red():
+                        w._set_red()
+                    else:
+                        w._set_black()
+                    node.parent._set_black()
+                    w.right._set_black()
+                    self._left_rotate(node.parent)
+                    node = self.root
+            else:
+                w = node.parent.left
+                if w.is_red():
+                    w._set_black()
+                    node.parent._set_red()
+                    self._left_rotate(node.parent)
+                    w = node.parent.left
+                if not w.right.is_red() and not w.left.is_red():
+                    w._set_red()
+                    node = node.parent
+                else:
+                    if not w.left.is_red():
+                        w.right._set_black()
+                        w._set_red()
+                        self._right_rotate(w)
+                        w = node.parent.left
+                    if node.parent.is_red():
+                        w._set_red()
+                    else:
+                        w._set_black()
+                    node.parent._set_black()
+                    w.left._set_black()
+                    self._left_rotate(node.parent)
+                    node = self.root
+        node._set_black()
 
     def _delete(self, node_key):
-        pass
+        suce_node_key = node_key
+        suce_orig_color = suce_node_key.color
+        if node_key.left is None:
+            node = node_key.right
+            self._transplant(node_key, node_key.right)
+        elif node_key.right is None:
+            node = node_key.left
+            self._transplant(node_key, node_key.left)
+        else:
+            suce_node_key = self._minimum(node_key.right)
+            suce_orig_color = suce_node_key.color
+            node = suce_node_key.right
+            if suce_node_key.parent is None:
+                node.parent = suce_node_key
+            else:
+                self._transplant(suce_node_key, suce_node_key.right)
+                suce_node_key.right = node_key.right
+                suce_node_key.right.parent = suce_node_key
+            self._transplant(node_key, suce_node_key)
+            suce_node_key.left = node_key.left
+            suce_node_key.left.parent = suce_node_key
+            if node_key.is_red():
+                suce_node_key._set_red()
+            else:
+                suce_node_key._set_black()
+        if suce_orig_color == 'black':
+            self._delete_fixup(node)
 
     def _get_height(self, root):
         if root is None:
